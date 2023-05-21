@@ -12,7 +12,6 @@ from django.utils import timezone
 from . import models
 from . import client
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -210,8 +209,16 @@ class Queryset:
 
 class RedisAdmin(admin.ModelAdmin):
     show_full_result_count = False
-    list_display = ['key', 'type', 'expires_at', 'ttl', 'idle',
-                    'cropped_value', 'json', 'base64']
+    list_display = [
+        'key',
+        'type',
+        'expires_at',
+        'ttl',
+        'idle',
+        'cropped_value',
+        'json',
+        'base64'
+    ]
     search_fields = 'key__contains',
 
     # Keep everything read-only for now, saving isn't implemented yet

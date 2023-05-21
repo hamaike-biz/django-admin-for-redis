@@ -12,7 +12,6 @@ from django.utils import timezone
 
 from . import settings
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -40,7 +39,6 @@ class RedisMeta:
 
 
 class RedisValue(models.Model):
-
     TYPES = dict()
 
     key = models.CharField(max_length=256, primary_key=True)
@@ -74,6 +72,10 @@ class RedisValue(models.Model):
                 raw_value = decode_bytes(base64.b64decode(raw_value))
                 self.base64 = True
             except binascii.Error:
+                self.base64 = False
+            except ValueError:
+                import traceback
+                traceback.print_exc()
                 self.base64 = False
 
         v2 = raw_value
@@ -184,11 +186,26 @@ class RedisHash(RedisValue):
     @property
     def value(self) -> typing.Mapping:
         raw_value = self.raw_value
+        print("##### TEST key #####", self.key)
+        # print("##### TEST raw_value #####", raw_value)
+        formated_values = {}
         if raw_value:
-            raw_value = {decode_bytes(k): self.decode_string(v)
-                         for k, v in raw_value.items()}
+            try:
+                # raw_value = {decode_bytes(k): self.decode_string(v) for k, v in raw_value.items()}
+                for k, v in raw_value.items():
+                    formated_key = decode_bytes(k)
+                    # print("##### TEST formated_key #####", formated_key)
+                    try:
+                        formated_val = self.decode_string(v)
+                    except:
+                        formated_val = f"faild decode. {v}"
+                        # print("##### TEST formated_val #####", formated_val)
+                    formated_values[formated_key] = formated_val
+            except:
+                import traceback
+                traceback.print_exc()
 
-        return raw_value
+        return formated_values
 
 
 @RedisValue.register_type('zset')
@@ -214,6 +231,7 @@ for name, server in settings.SERVERS.items():
     class Meta(RedisMeta):
         pass
 
+
     # Overwrite meta variables if available
     if 'meta' in server:
         for key, value in server['meta'].items():
@@ -224,4 +242,3 @@ for name, server in settings.SERVERS.items():
         'Meta': Meta,
     })
     globals()[name.capitalize()] = server_models[name]
-
